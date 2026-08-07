@@ -13,13 +13,40 @@
 
 ## 2. Monitoring des Quartiers
 
-- Source: Monitoring des Quartiers
-- Geographic level: neighbourhood / municipality depending on indicator
-- Main indicators:
-  - unemployment rate
-  - CPAS/RIS beneficiaries
-  - BIM beneficiaries
+- Source: Monitoring des Quartiers – IBSA / perspective.brussels
+- Download date: 7 August 2026
+- Geographic level used in this project: neighbourhoods (Quartiers)
+- Territorial coverage downloaded: all Brussels-Capital Region neighbourhoods
 - Raw data stored locally in: data/raw/
+
+### Indicators downloaded
+
+1. Unemployment rate
+   - Original indicator: Taux de chômage
+   - Reference year: 2023
+   - Unit: %
+   - Raw file: data/raw/monitoring_unemployment_2023.csv
+
+2. CPAS / RIS beneficiaries
+   - Original indicator: Part des bénéficiaires d'un revenu du CPAS (RIS ou équivalent) dans la population
+   - Reference year: 2023
+   - Unit: %
+   - Raw file: data/raw/monitoring_cpas_2023.csv
+
+3. BIM beneficiaries
+   - Original indicator: Part des bénéficiaires de l'intervention majorée dans la population totale
+   - Reference year: 2024
+   - Unit: %
+   - Raw file: data/raw/monitoring_bim_2024.csv
+
+### Methodological note
+
+The indicators do not all refer to the same year:
+unemployment and CPAS/RIS data refer to 2023, while BIM data refer to 2024.
+The original reference year of each indicator is preserved in the analytical pipeline rather than artificially harmonised.
+
+The complete set of Brussels neighbourhoods was downloaded.
+The Brussels North study area will be defined later through a reproducible geographic filtering procedure rather than by manually selecting neighbourhoods during data extraction.
 
 ## 3. Statbel Statistical Sectors
 

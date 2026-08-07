@@ -1,0 +1,146 @@
+territory_code,territory,unemployment_rate,unemployment_year
+1,Grand Place,15.15,2023
+2,Dansaert,18.98,2023
+3,Béguinage - Dixmude,18.6,2023
+4,Martyrs,13.26,2023
+5,Notre-Dame-aux-Neiges,15.34,2023
+6,Quartier Royal,10.14,2023
+7,Sablon,17.36,2023
+8,Marolles,29.65,2023
+9,Stalingrad,23.28,2023
+10,Anneessens,26.06,2023
+11,Cureghem Bara,25.6,2023
+12,Cureghem Vétérinaire,25.47,2023
+13,Cureghem Rosée,27.97,2023
+14,Duchesse,26.4,2023
+15,Gare de l'ouest,31.71,2023
+16,Molenbeek Historique,30.32,2023
+17,Koekelberg,22.43,2023
+18,Quartier Maritime,21.99,2023
+19,Vieux Laeken Ouest,17.9,2023
+20,Vieux Laeken Est,21.51,2023
+21,Quartier Nord,25.16,2023
+22,Quartier Brabant,26.9,2023
+23,Colignon,21.26,2023
+24,Chaussée de Haecht,23.13,2023
+25,Saint-Josse Centre,22.67,2023
+26,Dailly,17.23,2023
+27,Josaphat,13.69,2023
+28,Plasky,11.29,2023
+29,Squares,14.9,2023
+30,Porte Tervueren,12.2,2023
+31,Saint-Michel,10.09,2023
+32,Saint-Pierre,13.19,2023
+33,Chasse,17.63,2023
+34,Jourdan,16.56,2023
+35,Quartier Européen,9.37,2023
+36,Matonge,17.1,2023
+37,Flagey - Malibran,18.84,2023
+38,Hôpital Etterbeek-Ixelles,15.93,2023
+39,Etangs d'Ixelles,10.88,2023
+40,Louise - Longue Haie,12.6,2023
+41,Berckmans - Hôtel des Monnaies,16.39,2023
+42,Châtelain,12.03,2023
+43,Brugmann - Lepoutre,12.44,2023
+44,Churchill,12.37,2023
+45,Molière - Longchamp,15.61,2023
+46,Altitude 100,13.97,2023
+47,Haut Saint-Gilles,17.28,2023
+48,Porte de Hal,23.54,2023
+49,Bosnie,26.12,2023
+50,Bas Forest,24.26,2023
+51,Van Volxem - Van Haelen,16.98,2023
+52,Veeweyde - Aurore,17.94,2023
+53,Bizet - Roue- Ceria,13.68,2023
+54,Vogelenzang - Erasme,24.8,2023
+55,Neerpede,4.27,2023
+56,Bon Air,22.81,2023
+57,Scherdemael,12.52,2023
+58,Anderlecht - Centre - Wayez,22.24,2023
+59,Scheut,17.58,2023
+60,Buffon,13.59,2023
+61,Moortebeek - Peterbos,20.24,2023
+62,Machtens,15.48,2023
+63,Karreveld,20.95,2023
+64,Hôpital Français,14.13,2023
+65,Korenbeek,13.39,2023
+66,Potaarde,11.07,2023
+67,Berchem Sainte-Agathe Centre,15.15,2023
+68,Villas de Ganshoren,17.35,2023
+69,Ganshoren Centre,13.67,2023
+70,Basilique,15.47,2023
+71,Woeste,17.01,2023
+72,Jette Centre,14.83,2023
+73,Heymbosch - AZ-Jette,11.17,2023
+74,Heysel,16.77,2023
+75,Houba,19.25,2023
+76,Mutsaard,13.41,2023
+77,Heembeek,14.53,2023
+78,Haren,11.5,2023
+79,Paix,16.46,2023
+80,Helmet,19.52,2023
+81,Gare de Schaerbeek,18.98,2023
+82,Terdelt,14.39,2023
+83,Conscience,17.5,2023
+84,Avenue Léopold III,13.97,2023
+85,Gare Josaphat,12.08,2023
+86,Paduwa,13.96,2023
+87,Reyers,11.73,2023
+88,Georges Henri,10.65,2023
+89,Gribaumont,9.72,2023
+90,Roodebeek - Constellations,14.25,2023
+91,Val d'Or,9.87,2023
+92,Kapelleveld,19.07,2023
+93,Boulevard de la Woluwe,12.88,2023
+94,Stockel,8.86,2023
+95,Sainte-Alix - Joli Bois,9.63,2023
+96,Saint-Paul,9.23,2023
+97,Putdael,9.41,2023
+98,Auderghem centre,9.64,2023
+99,Chant d'Oiseau,9.42,2023
+100,Chaussée de Wavre - Saint-Julien,10.8,2023
+101,Trois Tilleuls,18.51,2023
+102,Transvaal,12.53,2023
+103,Boitsfort Centre,12.42,2023
+104,Watermael Centre,10.18,2023
+105,Dries,10.62,2023
+106,Boondael,13.86,2023
+107,Université,15.1,2023
+108,Montjoie - Langeveld,9.86,2023
+109,Observatoire,9.18,2023
+110,Fort Jaco,10.52,2023
+111,Vivier d'Oie,7.4,2023
+112,Kriekenput - Homborch - Verrewinkel,18.84,2023
+113,Saint-Job Kauwberg,10.71,2023
+114,Dieweg,10.12,2023
+115,Kalevoet - Moensberg,11.98,2023
+116,Globe,13.98,2023
+117,Vossegat - Roosendaal,14.4,2023
+118,Saint-Denis - Neerstalle,21.04,2023
+700,Cimetière de Bruxelles,,2023
+701,Cimetière d'Ixelles,,2023
+702,Cimetière de Saint-Gilles,,2023
+800,Industrie Nord,4.99,2023
+801,Industrie OTAN,6.98,2023
+802,Delta,,2023
+803,Industrie Sud,3.06,2023
+804,Gare du Midi,,2023
+805,Industrie Birmingham,24.67,2023
+900,Domaine Royal Laeken,,2023
+901,Parc Josaphat,,2023
+902,Botanique,,2023
+903,Cinquantenaire,,2023
+904,Parc Léopold,,2023
+905,Parc de la Woluwe,,2023
+906,Forêt de Soignes,,2023
+907,Bois de la Cambre,,2023
+908,Parc Wolvendael,,2023
+909,Parc Duden - Parc de Forest,10.24,2023
+910,Parc des Etangs,,2023
+911,Parc Astrid,,2023
+912,Parc Forestier,,2023
+913,Parc Marie-José,,2023
+914,Scheutbos,,2023
+915,Parc Elisabeth,,2023
+916,Bois du Laarbeek - Poelbos,,2023
+917,Parc Baudouin - Dielegembos,,2023
