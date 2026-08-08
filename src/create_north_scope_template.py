@@ -76,7 +76,7 @@ crosswalk = (
 
 crosswalk["in_bassin_nord"] = "TO_VALIDATE"
 
-crosswalk["target_basin"] = "Bassin Nord"
+crosswalk["target_basin"] = "TO_VALIDATE"
 
 crosswalk["mapping_method"] = "TO_VALIDATE"
 
