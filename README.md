@@ -197,14 +197,16 @@ Documente le raisonnement géographique et le processus de validation territoria
 ## Structure du dépôt
 
 ```text
-app/         future application interactive
-data/        couches de données raw, interim et processed
-docs/        documentation méthodologique et documentation des sources
-notebooks/   notebooks d’exploration et d’analyse
-outputs/     figures et rapports
-src/         scripts reproductibles de traitement des données
-tests/       contrôles automatisés de qualité
-README.md    point d’entrée du projet
+app/              application interactive prévue
+data/             données brutes, intermédiaires et traitées
+docs/             documentation méthodologique et sources de données
+notebooks/        notebooks d’exploration, d’analyse et de validation géographique
+outputs/          figures, cartes et rapports générés
+src/              scripts Python reproductibles de préparation et de validation
+tests/            tests et contrôles automatisés de qualité
+.gitignore        règles d’exclusion des fichiers locaux et temporaires
+README.md         présentation générale et documentation principale du projet
+requirements.txt  dépendances Python nécessaires à la reproductibilité
 ```
 
 ## Principes méthodologiques
