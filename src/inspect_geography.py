@@ -1,55 +1,92 @@
 from pathlib import Path
+
 import geopandas as gpd
+import pyogrio
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
-file_path = (
+URBIS_FILE = (
     ROOT
     / "data"
     / "raw"
     / "geography"
-    / "UrbAdm_StatisticalUnits.gml"
+    / "UrbISVector_04000.gpkg"
 )
 
-print("File exists:", file_path.exists())
-print("File:", file_path)
 
-gdf = gpd.read_file(file_path)
+if not URBIS_FILE.exists():
+    raise FileNotFoundError(
+        f"UrbIS GeoPackage not found: {URBIS_FILE}"
+    )
 
-print("\nRows:")
-print(len(gdf))
-
-print("\nCRS:")
-print(gdf.crs)
-
-print("\nColumns:")
-print(gdf.columns.tolist())
-
-print("\nFirst five rows:")
-print(gdf.head())
-
-print("\nGeometry types:")
-print(gdf.geometry.geom_type.value_counts())
 
 print("\n" + "=" * 80)
-print("KEY IDENTIFIER FIELDS")
+print("URBIS VECTOR GEOPACKAGE")
 print("=" * 80)
 
-columns_to_inspect = [
-    "gml_id",
-    "identifier",
-    "localId",
-    "thematicId|ThematicIdentifier|identifier",
-    "text",
-]
+print("File:")
+print(URBIS_FILE)
 
-available_columns = [
-    col for col in columns_to_inspect
-    if col in gdf.columns
-]
 
-print(
-    gdf[available_columns]
-    .head(20)
-    .to_string(index=False)
+print("\nRelevant layers:")
+
+layers = pyogrio.list_layers(
+    URBIS_FILE
 )
+
+for layer_name, geometry_type in layers:
+    if layer_name in {
+        "MonitoringDistricts",
+        "StatisticalSectors",
+    }:
+        print(
+            f"- {layer_name}: {geometry_type}"
+        )
+
+
+for layer_name in [
+    "MonitoringDistricts",
+    "StatisticalSectors",
+]:
+
+    print("\n" + "=" * 80)
+    print(layer_name.upper())
+    print("=" * 80)
+
+    gdf = gpd.read_file(
+        URBIS_FILE,
+        layer=layer_name,
+    )
+
+    print("Rows:", len(gdf))
+    print("CRS:", gdf.crs)
+
+    print("Columns:")
+    print(gdf.columns.tolist())
+
+    print("Geometry types:")
+    print(
+        gdf.geometry
+        .geom_type
+        .value_counts(dropna=False)
+    )
+
+    print(
+        "Missing geometries:",
+        gdf.geometry.isna().sum()
+    )
+
+    print(
+        "Invalid geometries:",
+        (~gdf.geometry.is_valid).sum()
+    )
+
+    print("\nFirst five rows:")
+    print(
+        gdf.drop(
+            columns="geometry"
+        )
+        .head()
+        .to_string(index=False)
+    )

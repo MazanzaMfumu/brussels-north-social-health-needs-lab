@@ -10,12 +10,12 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 
-GML_FILE = (
+URBIS_FILE = (
     ROOT
     / "data"
     / "raw"
     / "geography"
-    / "UrbAdm_StatisticalUnits.gml"
+    / "UrbISVector_04000.gpkg"
 )
 
 VULNERABILITY_FILE = (
@@ -27,10 +27,28 @@ VULNERABILITY_FILE = (
 
 
 # ============================================================
-# 2. Read datasets
+# 2. Check input files
 # ============================================================
 
-geography = gpd.read_file(GML_FILE)
+if not URBIS_FILE.exists():
+    raise FileNotFoundError(
+        f"UrbIS GeoPackage not found: {URBIS_FILE}"
+    )
+
+if not VULNERABILITY_FILE.exists():
+    raise FileNotFoundError(
+        f"Vulnerability file not found: {VULNERABILITY_FILE}"
+    )
+
+
+# ============================================================
+# 3. Read datasets
+# ============================================================
+
+geography = gpd.read_file(
+    URBIS_FILE,
+    layer="MonitoringDistricts",
+)
 
 vulnerability = pd.read_csv(
     VULNERABILITY_FILE
@@ -38,7 +56,7 @@ vulnerability = pd.read_csv(
 
 
 # ============================================================
-# 3. Basic row counts
+# 4. Basic row counts
 # ============================================================
 
 print("\n" + "=" * 80)
@@ -50,31 +68,51 @@ print("Monitoring territories:", len(vulnerability))
 
 
 # ============================================================
-# 4. Build a clean geographic territory code
+# 5. Check expected UrbIS columns
 # ============================================================
 
-THEMATIC_ID_COLUMN = (
-    "thematicId|ThematicIdentifier|identifier"
+required_columns = {
+    "MDZONE",
+    "NAMEFRE",
+    "NAMEDUT",
+    "geometry",
+}
+
+missing_columns = (
+    required_columns
+    - set(geography.columns)
 )
 
-geography["territory_code"] = pd.to_numeric(
-    geography[THEMATIC_ID_COLUMN],
-    errors="coerce"
-).astype("Int64")
+if missing_columns:
+    raise ValueError(
+        "Missing expected UrbIS columns: "
+        f"{sorted(missing_columns)}"
+    )
 
 
 # ============================================================
-# 5. Standardise Monitoring territory code
+# 6. Standardise geographic territory code
 # ============================================================
 
-vulnerability["territory_code"] = pd.to_numeric(
-    vulnerability["territory_code"],
-    errors="coerce"
-).astype("Int64")
+geography["territory_code"] = (
+    pd.to_numeric(
+        geography["MDZONE"],
+        errors="raise",
+    )
+    .astype(int)
+)
+
+vulnerability["territory_code"] = (
+    pd.to_numeric(
+        vulnerability["territory_code"],
+        errors="raise",
+    )
+    .astype(int)
+)
 
 
 # ============================================================
-# 6. Quality checks on geographic codes
+# 7. Geographic quality checks
 # ============================================================
 
 print("\n" + "=" * 80)
@@ -96,14 +134,29 @@ print(
     geography["territory_code"].duplicated().sum()
 )
 
+print(
+    "Invalid geometries:",
+    (~geography.geometry.is_valid).sum()
+)
+
+print(
+    "Empty geometries:",
+    geography.geometry.is_empty.sum()
+)
+
+print(
+    "CRS:",
+    geography.crs
+)
+
 print("\nFirst geographic codes:")
 
 print(
     geography[
         [
-            "gml_id",
             "territory_code",
-            "text",
+            "NAMEFRE",
+            "NAMEDUT",
         ]
     ]
     .head(20)
@@ -112,7 +165,7 @@ print(
 
 
 # ============================================================
-# 7. Quality checks on Monitoring codes
+# 8. Monitoring data quality checks
 # ============================================================
 
 print("\n" + "=" * 80)
@@ -136,19 +189,23 @@ print(
 
 
 # ============================================================
-# 8. Compare exact code sets
+# 9. Compare exact code sets
 # ============================================================
 
 geo_codes = set(
     geography["territory_code"]
-    .dropna()
-    .astype(int)
 )
 
 monitoring_codes = set(
     vulnerability["territory_code"]
-    .dropna()
-    .astype(int)
+)
+
+only_in_geography = (
+    geo_codes - monitoring_codes
+)
+
+only_in_monitoring = (
+    monitoring_codes - geo_codes
 )
 
 
@@ -167,40 +224,81 @@ print(
 )
 
 print(
+    "Codes only in geography:",
+    sorted(only_in_geography)
+)
+
+print(
+    "Codes only in Monitoring data:",
+    sorted(only_in_monitoring)
+)
+
+print(
     "Exact code-set match:",
     geo_codes == monitoring_codes
 )
 
 
 # ============================================================
-# 9. Show differences if any
+# 10. Hard validation
 # ============================================================
 
-only_in_geography = (
-    geo_codes - monitoring_codes
-)
+EXPECTED_TERRITORIES = 145
 
-only_in_monitoring = (
-    monitoring_codes - geo_codes
-)
+if len(geography) != EXPECTED_TERRITORIES:
+    raise ValueError(
+        f"Expected {EXPECTED_TERRITORIES} geographic units, "
+        f"found {len(geography)}."
+    )
 
-print("\nCodes only in geography:")
-print(sorted(only_in_geography))
+if len(vulnerability) != EXPECTED_TERRITORIES:
+    raise ValueError(
+        f"Expected {EXPECTED_TERRITORIES} Monitoring territories, "
+        f"found {len(vulnerability)}."
+    )
 
-print("\nCodes only in Monitoring data:")
-print(sorted(only_in_monitoring))
+if geography["territory_code"].duplicated().any():
+    raise ValueError(
+        "Duplicated geographic territory codes detected."
+    )
+
+if vulnerability["territory_code"].duplicated().any():
+    raise ValueError(
+        "Duplicated Monitoring territory codes detected."
+    )
+
+if only_in_geography or only_in_monitoring:
+    raise ValueError(
+        "Geographic and Monitoring territory codes "
+        "do not correspond exactly."
+    )
+
+if geography.geometry.isna().any():
+    raise ValueError(
+        "Missing geographic geometries detected."
+    )
+
+if geography.geometry.is_empty.any():
+    raise ValueError(
+        "Empty geographic geometries detected."
+    )
+
+if (~geography.geometry.is_valid).any():
+    raise ValueError(
+        "Invalid geographic geometries detected."
+    )
 
 
 # ============================================================
-# 10. Test one-to-one merge by territory code
+# 11. Test one-to-one merge
 # ============================================================
 
 test_merge = vulnerability.merge(
     geography[
         [
             "territory_code",
-            "gml_id",
-            "text",
+            "NAMEFRE",
+            "NAMEDUT",
         ]
     ],
     on="territory_code",
@@ -219,8 +317,16 @@ print(
 )
 
 
+if not (
+    test_merge["_merge"] == "both"
+).all():
+    raise ValueError(
+        "Some territories failed the one-to-one merge."
+    )
+
+
 # ============================================================
-# 11. Show first matched rows
+# 12. Show first matched rows
 # ============================================================
 
 print("\nFirst matched rows:")
@@ -230,10 +336,16 @@ print(
         [
             "territory_code",
             "territory",
-            "text",
+            "NAMEFRE",
+            "NAMEDUT",
             "_merge",
         ]
     ]
     .head(20)
     .to_string(index=False)
 )
+
+
+print("\n" + "=" * 80)
+print("GEOGRAPHY MATCH VALIDATION PASSED")
+print("=" * 80)

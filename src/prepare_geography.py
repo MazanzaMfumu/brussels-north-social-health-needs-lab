@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 
@@ -16,13 +15,14 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 
 PROCESSED_DIR.mkdir(
     parents=True,
-    exist_ok=True
+    exist_ok=True,
 )
 
-GML_FILE = (
+
+URBIS_FILE = (
     RAW_DIR
     / "geography"
-    / "UrbAdm_StatisticalUnits.gml"
+    / "UrbISVector_04000.gpkg"
 )
 
 VULNERABILITY_FILE = (
@@ -32,182 +32,272 @@ VULNERABILITY_FILE = (
 
 
 # ============================================================
-# 2. Read source datasets
+# 2. Required inputs
+# ============================================================
+
+if not URBIS_FILE.exists():
+    raise FileNotFoundError(
+        f"UrbIS GeoPackage not found: {URBIS_FILE}"
+    )
+
+if not VULNERABILITY_FILE.exists():
+    raise FileNotFoundError(
+        f"Vulnerability table not found: {VULNERABILITY_FILE}"
+    )
+
+
+# ============================================================
+# 3. Read official Monitoring district geography
 # ============================================================
 
 geography = gpd.read_file(
-    GML_FILE
+    URBIS_FILE,
+    layer="MonitoringDistricts",
 )
+
+print("\nMonitoringDistricts loaded.")
+print("Rows:", len(geography))
+print("Source CRS:", geography.crs)
+print("Columns:", geography.columns.tolist())
+
+
+# ============================================================
+# 4. Check expected UrbIS structure
+# ============================================================
+
+required_columns = {
+    "MDZONE",
+    "NAMEFRE",
+    "NAMEDUT",
+    "geometry",
+}
+
+missing_columns = (
+    required_columns
+    - set(geography.columns)
+)
+
+if missing_columns:
+    raise ValueError(
+        "Missing expected columns in MonitoringDistricts: "
+        f"{sorted(missing_columns)}"
+    )
+
+
+# ============================================================
+# 5. Keep and standardise geographic variables
+# ============================================================
+
+geography_clean = geography[
+    [
+        "MDZONE",
+        "NAMEFRE",
+        "NAMEDUT",
+        "geometry",
+    ]
+].copy()
+
+geography_clean = geography_clean.rename(
+    columns={
+        "MDZONE": "territory_code",
+        "NAMEFRE": "territory_name_urbis_fr",
+        "NAMEDUT": "territory_name_urbis_nl",
+    }
+)
+
+
+# ============================================================
+# 6. Standardise territory code
+# ============================================================
+
+geography_clean["territory_code"] = (
+    pd.to_numeric(
+        geography_clean["territory_code"],
+        errors="raise",
+    )
+    .astype(int)
+)
+
+
+# ============================================================
+# 7. Geographic quality controls
+# ============================================================
+
+EXPECTED_TERRITORIES = 145
+
+if len(geography_clean) != EXPECTED_TERRITORIES:
+    raise ValueError(
+        f"Expected {EXPECTED_TERRITORIES} Monitoring districts, "
+        f"but found {len(geography_clean)}."
+    )
+
+if not geography_clean["territory_code"].is_unique:
+    raise ValueError(
+        "Duplicate MDZONE / territory_code values detected."
+    )
+
+if geography_clean["territory_code"].isna().any():
+    raise ValueError(
+        "Missing territory_code values detected."
+    )
+
+if geography_clean.geometry.isna().any():
+    raise ValueError(
+        "Missing Monitoring district geometries detected."
+    )
+
+if geography_clean.geometry.is_empty.any():
+    raise ValueError(
+        "Empty Monitoring district geometries detected."
+    )
+
+invalid_count = (
+    ~geography_clean.geometry.is_valid
+).sum()
+
+if invalid_count != 0:
+    raise ValueError(
+        f"{invalid_count} invalid geometries detected."
+    )
+
+if (
+    geography_clean.crs is None
+    or geography_clean.crs.to_epsg() != 31370
+):
+    raise ValueError(
+        "Unexpected source CRS. "
+        f"Expected EPSG:31370, got {geography_clean.crs}."
+    )
+
+print("Unique territory codes:",
+      geography_clean["territory_code"].nunique())
+
+print("Invalid geometries:", invalid_count)
+
+
+# ============================================================
+# 8. Read territorial vulnerability indicators
+# ============================================================
 
 vulnerability = pd.read_csv(
     VULNERABILITY_FILE
 )
 
+if len(vulnerability) != EXPECTED_TERRITORIES:
+    raise ValueError(
+        f"Expected {EXPECTED_TERRITORIES} vulnerability rows, "
+        f"but found {len(vulnerability)}."
+    )
 
-# ============================================================
-# 3. Create common territory code
-# ============================================================
-
-THEMATIC_ID_COLUMN = (
-    "thematicId|ThematicIdentifier|identifier"
+vulnerability["territory_code"] = (
+    pd.to_numeric(
+        vulnerability["territory_code"],
+        errors="raise",
+    )
+    .astype(int)
 )
 
-geography["territory_code"] = pd.to_numeric(
-    geography[THEMATIC_ID_COLUMN],
-    errors="raise"
-).astype(int)
-
-vulnerability["territory_code"] = pd.to_numeric(
-    vulnerability["territory_code"],
-    errors="raise"
-).astype(int)
-
-
-# ============================================================
-# 4. Extract French and Dutch geographic names
-# ============================================================
-
-def extract_names(value):
-    """
-    Extract French and Dutch Monitoring district names
-    from the UrbIS multilingual 'text' field.
-    """
-
-    if isinstance(value, (list, tuple, np.ndarray)):
-        values = list(value)
-
-        name_fr = (
-            str(values[0]).strip()
-            if len(values) >= 1
-            else None
-        )
-
-        name_nl = (
-            str(values[1]).strip()
-            if len(values) >= 2
-            else None
-        )
-
-        return pd.Series(
-            [name_fr, name_nl]
-        )
-
-    # Fallback if the value is not stored as a list-like object
-    if pd.isna(value):
-        return pd.Series(
-            [None, None]
-        )
-
-    text = str(value).strip()
-
-    return pd.Series(
-        [text, None]
+if not vulnerability["territory_code"].is_unique:
+    raise ValueError(
+        "Duplicate territory_code values "
+        "in vulnerability table."
     )
 
 
-geography[
-    [
-        "territory_name_urbis_fr",
-        "territory_name_urbis_nl",
-    ]
-] = geography["text"].apply(
-    extract_names
+# ============================================================
+# 9. Prove exact geographic correspondence
+# ============================================================
+
+geo_codes = set(
+    geography_clean["territory_code"]
 )
 
-
-# ============================================================
-# 5. Keep only useful geographic variables
-# ============================================================
-
-geography_clean = geography[
-    [
-        "territory_code",
-        "territory_name_urbis_fr",
-        "territory_name_urbis_nl",
-        "geometry",
-    ]
-].copy()
-
-
-# ============================================================
-# 6. Geographic quality checks
-# ============================================================
-
-assert len(geography_clean) == 145
-
-assert (
-    geography_clean[
-        "territory_code"
-    ].is_unique
+vulnerability_codes = set(
+    vulnerability["territory_code"]
 )
 
-assert (
-    geography_clean[
-        "territory_code"
-    ].notna().all()
+missing_in_geography = sorted(
+    vulnerability_codes - geo_codes
 )
 
-assert (
-    geography_clean.geometry.notna().all()
+missing_in_vulnerability = sorted(
+    geo_codes - vulnerability_codes
 )
 
 print(
-    "Source CRS:",
-    geography_clean.crs
+    "\nCodes missing from geography:",
+    missing_in_geography,
 )
 
 print(
-    "Invalid geometries:",
-    (~geography_clean.geometry.is_valid).sum()
+    "Codes missing from vulnerability:",
+    missing_in_vulnerability,
 )
 
 
-# ============================================================
-# 7. Convert to WGS84 for web mapping
-# ============================================================
-
-geography_clean = (
-    geography_clean
-    .to_crs(epsg=4326)
-)
+if missing_in_geography or missing_in_vulnerability:
+    raise ValueError(
+        "Territorial codes do not correspond exactly "
+        "between UrbIS and vulnerability data."
+    )
 
 print(
-    "Output CRS:",
-    geography_clean.crs
+    "Territorial correspondence: PERFECT MATCH"
 )
 
 
 # ============================================================
-# 8. Merge geography with Monitoring indicators
+# 10. Merge geography and vulnerability
 # ============================================================
 
 geo_vulnerability = geography_clean.merge(
     vulnerability,
     on="territory_code",
-    how="inner",
+    how="left",
     validate="one_to_one",
 )
 
 
 # ============================================================
-# 9. Final quality checks
+# 11. Final merge checks
 # ============================================================
 
-assert len(geo_vulnerability) == 145
+if len(geo_vulnerability) != EXPECTED_TERRITORIES:
+    raise ValueError(
+        "Unexpected number of territories after merge."
+    )
 
-assert (
-    geo_vulnerability[
-        "territory_code"
-    ].is_unique
+if not geo_vulnerability["territory_code"].is_unique:
+    raise ValueError(
+        "territory_code is not unique after merge."
+    )
+
+if geo_vulnerability.geometry.isna().any():
+    raise ValueError(
+        "Missing geometries after merge."
+    )
+
+
+# ============================================================
+# 12. Convert to WGS84 for web mapping
+# ============================================================
+
+geography_web = geography_clean.to_crs(
+    epsg=4326
 )
 
-assert (
-    geo_vulnerability.geometry.notna().all()
+geo_vulnerability_web = geo_vulnerability.to_crs(
+    epsg=4326
+)
+
+print(
+    "\nWeb output CRS:",
+    geo_vulnerability_web.crs,
 )
 
 
 # ============================================================
-# 10. Put analytical territory name first
+# 13. Final analytical column order
 # ============================================================
 
 final_columns = [
@@ -225,13 +315,15 @@ final_columns = [
     "geometry",
 ]
 
-geo_vulnerability = geo_vulnerability[
-    final_columns
-]
+geo_vulnerability_web = (
+    geo_vulnerability_web[
+        final_columns
+    ]
+)
 
 
 # ============================================================
-# 11. Save clean geographic boundaries
+# 14. Save Monitoring boundaries
 # ============================================================
 
 boundaries_file = (
@@ -239,14 +331,14 @@ boundaries_file = (
     / "brussels_monitoring_boundaries.geojson"
 )
 
-geography_clean.to_file(
+geography_web.to_file(
     boundaries_file,
-    driver="GeoJSON"
+    driver="GeoJSON",
 )
 
 
 # ============================================================
-# 12. Save geographic vulnerability dataset
+# 15. Save vulnerability geography
 # ============================================================
 
 output_file = (
@@ -254,52 +346,48 @@ output_file = (
     / "brussels_monitoring_vulnerability.geojson"
 )
 
-geo_vulnerability.to_file(
+geo_vulnerability_web.to_file(
     output_file,
-    driver="GeoJSON"
+    driver="GeoJSON",
 )
 
 
 # ============================================================
-# 13. Final report
+# 16. Final report
 # ============================================================
 
-print("\n" + "=" * 80)
+print("\n" + "=" * 72)
 print("GEOGRAPHY PREPARATION COMPLETED")
-print("=" * 80)
+print("=" * 72)
 
 print(
     "Monitoring boundaries:",
-    len(geography_clean)
+    len(geography_web),
 )
 
 print(
     "Merged territories:",
-    len(geo_vulnerability)
+    len(geo_vulnerability_web),
 )
 
 print(
     "Final CRS:",
-    geo_vulnerability.crs
+    geo_vulnerability_web.crs,
 )
 
-print(
-    "Geometry types:"
-)
+print("\nGeometry types:")
 
 print(
-    geo_vulnerability
+    geo_vulnerability_web
     .geometry
     .geom_type
     .value_counts()
 )
 
-print(
-    "\nFirst five territories:"
-)
+print("\nFirst five territories:")
 
 print(
-    geo_vulnerability[
+    geo_vulnerability_web[
         [
             "territory_code",
             "territory",
